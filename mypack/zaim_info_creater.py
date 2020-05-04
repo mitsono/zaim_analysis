@@ -1,3 +1,4 @@
+import configparser
 import numpy as np
 from datetime import date
 from dateutil.relativedelta import relativedelta
@@ -11,7 +12,6 @@ import calendar
 class ZaimInfoCreater(object):
 
     WORK_DIR = '../work/zaim'
-    DL_DIR = '/Users/mitsono/Downloads'
     DL_FILE_PREFIX = 'Zaim'
     BUDGET_FILE_PATH = WORK_DIR + '/budget_by_category.csv'
     LAST_RUN_USERATE_FILE_PATH = WORK_DIR + '/last_run_userate.csv'
@@ -19,11 +19,18 @@ class ZaimInfoCreater(object):
     def __init__(self, start_date, end_date):
         self.start_date = start_date
         self.end_date = end_date
+
+        # 前回実行時のファイルパス
         list_of_files = glob.glob(
             self.WORK_DIR + '/' + self.DL_FILE_PREFIX + '*')
         self.last_run_csv_path = max(list_of_files, key=os.path.getctime)
+
+        # 今回処理対象とするファイルパス
+        inifile = configparser.ConfigParser()
+        inifile.read('../config.ini', 'UTF-8')
+        dl_dir = inifile.get('chrome', 'dl_dir')
         list_of_files = glob.glob(
-            self.DL_DIR + '/' + self.DL_FILE_PREFIX + '*')
+            dl_dir + '/' + self.DL_FILE_PREFIX + '*')
         self.cur_run_csv_path = max(list_of_files, key=os.path.getctime)
 
         self.df_cur_csv = None
