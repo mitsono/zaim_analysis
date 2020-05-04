@@ -25,7 +25,7 @@ class ZaimCsvDownloader(object):
         self.__login()
         time.sleep(5)
         self.__downloadcsv()
-        time.sleep(60)
+        time.sleep(30)
 
     def __create_driver(self):
         options = Options()
@@ -34,9 +34,19 @@ class ZaimCsvDownloader(object):
         options.add_argument('--proxy-server="direct://"')
         options.add_argument('--proxy-bypass-list=*')
         options.add_argument('--start-maximized')
-        # options.add_argument('--headless')
+        options.add_argument('--headless')
         driver = webdriver.Chrome(chrome_options=options)
         driver.implicitly_wait(10)
+
+        inifile = configparser.ConfigParser()
+        inifile.read('../config.ini', 'UTF-8')
+        dl_dir = inifile.get('chrome', 'dl_dir')
+        # dl_dir = 'C:\\Users\mitsono\Downloads'
+        driver.command_executor._commands["send_command"] = (
+            "POST", '/session/$sessionId/chromium/send_command')
+        params = {'cmd': 'Page.setDownloadBehavior', 'params': {
+            'behavior': 'allow', 'downloadPath': dl_dir}}
+        driver.execute("send_command", params)
 
         return driver
 
