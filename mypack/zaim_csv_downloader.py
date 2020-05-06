@@ -3,11 +3,16 @@ from selenium import webdriver
 import configparser
 from selenium.webdriver.support.ui import Select
 from selenium.webdriver.chrome.options import Options
+from bs4 import BeautifulSoup
 from datetime import date
 from dateutil.relativedelta import relativedelta
+import pandas
 
 
 class ZaimCsvDownloader(object):
+
+    DL_BALANCE_PATH = '../work/zaim/dl_balance.csv'
+    DL_BALANCE_DC_PATH = '../work/zaim/dl_balance_dc.csv'
 
     def __init__(self, start_date, end_date):
 
@@ -26,6 +31,9 @@ class ZaimCsvDownloader(object):
         time.sleep(5)
         self.__downloadcsv()
         time.sleep(30)
+        self.__save_balance_csv()
+        time.sleep(5)
+        self.__save_balance_dc_csv()
 
     def __create_driver(self):
         options = Options()
@@ -78,6 +86,72 @@ class ZaimCsvDownloader(object):
             'data[Money][charset]')).select_by_value(self.encode_str)
         self.driver.find_element_by_xpath(
             "//form[@id='MoneyHomeIndexForm']/div[@class='submit']/input").click()
+
+    def __save_balance_csv(self):
+        self.driver.get('https://zaim.net/home')
+
+        page = self.driver.page_source.encode('utf-8')
+        html = BeautifulSoup(page, "lxml")
+        p_div = html.find('div', attrs={'id': 'list-accounts'})
+        c_divs = p_div.find_all('div', recursive=False)
+
+        bl_title_list = []
+        bl_value_list = []
+
+        for c_div in c_divs:
+
+            c_img_t = c_div.find('img', attrs={'data-title': True})
+            if c_img_t is None:
+                continue
+            title = c_img_t['data-title']
+
+            c_div_name = c_div.find('div', attrs={'class': 'plus value'})
+            if c_div_name is None:
+                continue
+            value = c_div_name.text.replace("\n", "").replace(
+                ",", "").replace(chr(165), "")
+
+            if title in bl_title_list:
+                title += "2"
+
+            bl_title_list += [title]
+            bl_value_list += [value]
+
+        bl_df = pandas.DataFrame(
+            data={'title': bl_title_list, 'value': bl_value_list}, columns={'title', 'value'})
+
+        bl_df.to_csv(path_or_buf=self.DL_BALANCE_PATH,
+                     encoding="utf-8")
+
+    def __save_balance_dc_csv(self):
+        self.driver.get('https://zaim.net/securities/2697586')
+
+        page = self.driver.page_source.encode('utf-8')
+        html = BeautifulSoup(page, "lxml")
+        p_div = html.find('div', attrs={'class': 'description'})
+
+        c_trs = p_div.findAll('tr')
+
+        bl_title_list = []
+        bl_value_list = []
+
+        for i in range(1, 4):
+            c_tr = c_trs[i]
+            c_div_title = c_tr.findAll('td')[0]
+            c_div_value = c_tr.findAll('td')[4]
+
+            title = c_div_title.text
+            value = c_div_value.text.replace(
+                ",", "").replace(chr(165), "")
+
+            bl_title_list += [title]
+            bl_value_list += [value]
+
+        bl_df = pandas.DataFrame(
+            data={'title': bl_title_list, 'value': bl_value_list}, columns={'title', 'value'})
+
+        bl_df.to_csv(path_or_buf=self.DL_BALANCE_DC_PATH,
+                     encoding="utf-8")
 
 
 def main():

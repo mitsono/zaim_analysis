@@ -13,8 +13,13 @@ class ZaimInfoCreater(object):
 
     WORK_DIR = '../work/zaim'
     DL_FILE_PREFIX = 'Zaim'
-    BUDGET_FILE_PATH = WORK_DIR + '/budget_by_category.csv'
-    LAST_RUN_USERATE_FILE_PATH = WORK_DIR + '/last_run_userate.csv'
+    MST_BUDGET_PATH = WORK_DIR + '/mst_budget_by_category.csv'
+    TRAN_USERATE_PATH = WORK_DIR + '/tran_userate.csv'
+    DL_BALANCE_PATH = WORK_DIR + '/dl_balance.csv'
+    DL_BALANCE_DC_PATH = WORK_DIR + '/dl_balance_dc.csv'
+    DL_BALANCE_INS_PATH = WORK_DIR + '/dl_balance_ins.csv'
+    MST_BALANCE_PATH = WORK_DIR + '/mst_balance.csv'
+    TRAN_BALANCE = WORK_DIR + '/tran_balance.csv'
 
     def __init__(self, start_date, end_date):
         self.start_date = start_date
@@ -36,10 +41,104 @@ class ZaimInfoCreater(object):
         self.df_cur_csv = None
         self.df_add_csv = None
         self.df_buget_csv = None
+        self.df_balance = None
+        self.df_tran_balance = None
+
         self.df_dict = {}
+        self.df_balance_af = None
 
         # ファイル読み込み
         self.__set_dataframe()
+
+    def get_balance(self):
+        ret_str = []
+
+        # グループ毎に集計
+        df_wk_gr = self.df_balance.groupby("group", as_index=False).agg(
+            {'value': 'sum', 'sort': 'max'})
+
+        # sort列でソート
+        df_wk_gr = df_wk_gr.sort_values("sort")
+
+        # 万単位に変換
+        df_wk_gr["value"] = round(df_wk_gr["value"] / 10000, 1)
+
+        # 分析行追加
+        cus_group_list = []
+        cus_value_list = []
+
+        # 合計(保険・年金・出資予定除外)
+        df_wk1 = self.df_balance.loc[self.df_balance["title"] != "生命保険_由衣"]
+        df_wk1 = df_wk1.loc[df_wk1["title"] != "個人年金_由衣"]
+        df_wk1 = df_wk1.loc[df_wk1["group"] != "確定拠出_先進国株"]
+        df_wk1 = df_wk1.loc[df_wk1["group"] != "確定拠出_国内株"]
+        df_wk1 = df_wk1.loc[df_wk1["group"] != "出費予定資金(出産・学費)"]
+        sum = round(df_wk1.sum()["value"] / 10000, 1)
+        cus_group_list += ["合計(保険・年金・出資予定除外)"]
+        cus_value_list += [sum]
+
+        # 証券リスク比率(50%～70%)
+        df_wk1 = df_wk_gr.loc[df_wk_gr["group"] == "証券_リスク資産"]
+        risk = df_wk1.sum()["value"]
+        df_wk1 = df_wk_gr.loc[df_wk_gr["group"] == "証券_無リスク資産"]
+        non_risk = df_wk1.sum()["value"]
+        rate = round(risk / (risk + non_risk) * 100, 0)
+        cus_group_list += ["証券リスク比率(50%～70%)"]
+        cus_value_list += [str(rate) + "%"]
+
+        # 確定拠出海外株比率(50%～70%)
+        df_wk1 = df_wk_gr.loc[df_wk_gr["group"] == "確定拠出_先進国株"]
+        kokusai = df_wk1.sum()["value"]
+        df_wk1 = df_wk_gr.loc[df_wk_gr["group"] == "確定拠出_国内株"]
+        kokunai = df_wk1.sum()["value"]
+        rate = round(kokusai / (kokusai + kokunai) * 100, 0)
+        cus_group_list += ["確定拠出海外株比率(50%～70%)"]
+        cus_value_list += [str(rate) + "%"]
+
+        # 確定拠出リスク比率(50%～70%)
+        df_wk1 = df_wk_gr.loc[df_wk_gr["group"] == "確定拠出_リスク資産"]
+        risk = df_wk1.sum()["value"]
+        df_wk1 = df_wk_gr.loc[df_wk_gr["group"] == "確定拠出_無リスク資産"]
+        non_risk = df_wk1.sum()["value"]
+        rate = round(risk / (risk + non_risk) * 100, 0)
+        cus_group_list += ["確定拠出リスク比率(50%～70%)"]
+        cus_value_list += [str(rate) + "%"]
+
+        # 行追加
+        bl_cus = pandas.DataFrame(
+            data={'group': cus_group_list, 'value': cus_value_list}, columns={'group', 'value'})
+        df_wk_gr = df_wk_gr.append(bl_cus, ignore_index=True)
+
+        # 日付列追加
+        df_wk_gr["date"] = self.end_date.strftime("%Y/%m/%d")
+
+        # 退避
+        self.df_balance_af = df_wk_gr
+
+        for index, row in df_wk_gr.iterrows():
+
+            # 見出し
+            ret_str.append("■{}\n".format(row["group"]))
+
+            # tranファイルから過去データ取得
+            df_wk_tran = self.df_tran_balance.loc[self.df_tran_balance["group"]
+                                                  == row["group"]]
+            df_wk_tran = df_wk_tran.loc[df_wk_tran["date"].str.endswith("/15")]
+
+            # 過去データ date列でソート
+            df_wk_tran = df_wk_tran.sort_values("date")
+
+            # 過去データ出力
+            for index2, row2 in df_wk_tran.iterrows():
+                value = str(row2["value"]).rjust(4)
+                ret_str.append("{} {}\n".format(row2["date"], value))
+
+            value = str(row["value"]).rjust(4)
+            ret_str.append("{} {}\n".format(row["date"], value))
+
+            ret_str.append("\n")
+
+        return "".join(ret_str)
 
     def get_lastmonth_userate(self):
         return self.__get_userate(self.start_date.month)
@@ -52,7 +151,7 @@ class ZaimInfoCreater(object):
         ret_str.append("■前回からの増分\n")
 
         output_flg = False
-        df_last_run = pandas.read_csv(self.LAST_RUN_USERATE_FILE_PATH)
+        df_last_run = pandas.read_csv(self.TRAN_USERATE_PATH)
         for key in self.df_dict:
             df = self.df_dict[key]
             for index, row in df.iterrows():
@@ -104,6 +203,13 @@ class ZaimInfoCreater(object):
             ret_str.append("{}件 {}円\n".format(
                 df_add_spending["支出"].count(), "{:,}".format(df_add_spending["支出"].sum())))
 
+        ret_str.append("\n■個別残高\n")
+        df_bal_detail = self.df_balance.loc[self.df_balance["detail_out_flg"] > 0]
+        for index, row in df_bal_detail.iterrows():
+            value = str(round(row["value"] / 10000, 1)).rjust(5)
+            title = row["display_name"]
+            ret_str.append("{} {}\n".format(value, title))
+
         return "".join(ret_str)
 
     def end(self):
@@ -122,7 +228,13 @@ class ZaimInfoCreater(object):
             df_merge = df_merge.append(df, ignore_index=True)
 
         df_merge.to_csv(
-            path_or_buf=self.LAST_RUN_USERATE_FILE_PATH, encoding="utf-8")
+            path_or_buf=self.TRAN_USERATE_PATH, encoding="utf-8")
+
+        # 資産集計結果をcsvファイルに上書き保存
+        df_merge = self.df_tran_balance.append(
+            self.df_balance_af, ignore_index=True)
+        df_merge.to_csv(
+            path_or_buf=self.TRAN_BALANCE, encoding="utf-8")
 
     def __set_dataframe(self):
         self.df_cur_csv = pandas.read_csv(
@@ -133,7 +245,23 @@ class ZaimInfoCreater(object):
         self.df_add_csv = self.__get_add_datafram(
             df_last_csv, self.df_cur_csv)
 
-        self.df_buget_csv = pandas.read_csv(self.BUDGET_FILE_PATH)
+        self.df_buget_csv = pandas.read_csv(self.MST_BUDGET_PATH)
+
+        df_dl_bal = pandas.read_csv(self.DL_BALANCE_PATH)
+        df_dl_bal_dc = pandas.read_csv(self.DL_BALANCE_DC_PATH)
+        df_dl_bal_ins = pandas.read_csv(self.DL_BALANCE_INS_PATH)
+        df_mst_bal = pandas.read_csv(self.MST_BALANCE_PATH)
+
+        df_dl_merge = df_dl_bal.append(df_dl_bal_dc, ignore_index=True)
+        df_dl_merge = df_dl_merge.append(df_dl_bal_ins, ignore_index=True)
+        self.df_balance = pandas.merge(
+            df_mst_bal, df_dl_merge, on=["title"], how="left")
+
+        df_wk = pandas.read_csv(self.TRAN_BALANCE, index_col=0)
+
+        # 同一日付のデータ除外
+        end_date_str = self.end_date.strftime("%Y/%m/%d")
+        self.df_tran_balance = df_wk.loc[df_wk["date"] != end_date_str]
 
     def __get_add_datafram(self, df_old, df_new):
 
@@ -284,10 +412,12 @@ def main():
     last_start_date = last_end_date.replace(day=1)
 
     zic = ZaimInfoCreater(last_start_date, today_date)
+    print(zic.get_balance())
     print(zic.get_lastmonth_userate())
     print(zic.get_currentmonth_userate())
     print(zic.get_diff_userate())
     print(zic.get_summary())
+    # linepush.pushMessage(zic.get_balance())
     # linepush.pushMessage(zic.get_lastmonth_userate())
     # linepush.pushMessage(zic.get_currentmonth_userate())
     # linepush.pushMessage(zic.get_diff_userate())

@@ -1,5 +1,6 @@
 astroid==2.4.0
 autopep8==1.5.2
+beautifulsoup4==4.9.0
 certifi==2020.4.5.1
 chardet==3.0.4
 colorama==0.4.3
@@ -10,6 +11,7 @@ idna==2.9
 isort==4.3.21
 lazy-object-proxy==1.4.3
 line-bot-sdk==1.16.0
+lxml==4.5.0
 mccabe==0.6.1
 numpy==1.18.3
 pandas==1.0.3
@@ -21,6 +23,7 @@ pytz==2020.1
 requests==2.23.0
 selenium==3.141.0
 six==1.14.0
+soupsieve==2.0
 toml==0.10.0
 typed-ast==1.4.1
 urllib3==1.25.9

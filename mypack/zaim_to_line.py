@@ -18,6 +18,7 @@ def main():
 
     # 先月の予実分析をLineに通知
     zic = zaim_info_creater.ZaimInfoCreater(last_month_start_date, today_date)
+    linepush.pushMessage(zic.get_balance())
     linepush.pushMessage(zic.get_lastmonth_userate())
     linepush.pushMessage(zic.get_currentmonth_userate())
     linepush.pushMessage(zic.get_diff_userate())
