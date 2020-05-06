@@ -20,6 +20,7 @@ class ZaimInfoCreater(object):
     DL_BALANCE_INS_PATH = WORK_DIR + '/dl_balance_ins.csv'
     MST_BALANCE_PATH = WORK_DIR + '/mst_balance.csv'
     TRAN_BALANCE = WORK_DIR + '/tran_balance.csv'
+    MST_CARD_PATH = WORK_DIR + '/mst_card.csv'
 
     def __init__(self, start_date, end_date):
         self.start_date = start_date
@@ -263,6 +264,9 @@ class ZaimInfoCreater(object):
         end_date_str = self.end_date.strftime("%Y/%m/%d")
         self.df_tran_balance = df_wk.loc[df_wk["date"] != end_date_str]
 
+        # カード
+        self.df_mst_card = pandas.read_csv(self.MST_CARD_PATH)
+
     def __get_add_datafram(self, df_old, df_new):
 
         comparison_df = df_old.merge(df_new,
@@ -282,12 +286,12 @@ class ZaimInfoCreater(object):
         ret_str.append("{}月 目安使用率：{}%\n".format(
             target_month, int(std_userate)))
 
-        # 集計に含めないを除く
-        df_wk = df_wk.loc[df_wk["集計の設定"] != "集計に含めない"]
-
         # 対象月のデータを抽出
         df_wk = df_wk[df_wk.index.month == target_month]
         df_target_month = df_wk
+
+        # 集計に含めないを除く
+        df_wk = df_wk.loc[df_wk["集計の設定"] != "集計に含めない"]
 
         # 収支集計出力
         sum_income = round(df_wk["収入"].sum() / 10000, 1)
@@ -340,6 +344,21 @@ class ZaimInfoCreater(object):
         else:
             ret_str.append("{}件 {}円\n".format(
                 df_add_unknown["支出"].count(), "{:,}".format(df_add_unknown["支出"].sum())))
+
+        # カードマスタに当該月のデータをjoin
+        df_card_join = pandas.merge(
+            self.df_mst_card, df_target_month, on=["支払元"], how="left")
+        df_card_join = df_card_join.groupby(
+            "display_name", as_index=False).agg({'支出': 'sum'})
+
+        # 名称でソーﾄ
+        df_card_join = df_card_join.sort_values("display_name")
+
+        ret_str.append("\n■カード利用\n")
+        for index, row in df_card_join.iterrows():
+            value = str(round(row["支出"] / 10000, 1)).rjust(4)
+            title = row["display_name"]
+            ret_str.append("{} {}\n".format(value, title))
 
         return "".join(ret_str)
 
