@@ -269,6 +269,38 @@ class ZaimInfoCreater(object):
 
     def __get_add_datafram(self, df_old, df_new):
 
+        df_old['方法'] = df_old['方法'].astype(np.object)
+        df_old['カテゴリ'] = df_old['カテゴリ'].astype(np.object)
+        df_old['カテゴリの内訳'] = df_old['カテゴリの内訳'].astype(np.object)
+        df_old['支払元'] = df_old['支払元'].astype(np.object)
+        df_old['入金先'] = df_old['入金先'].astype(np.object)
+        df_old['品目'] = df_old['品目'].astype(np.object)
+        df_old['メモ'] = df_old['メモ'].astype(np.object)
+        df_old['お店'] = df_old['お店'].astype(np.object)
+        df_old['通貨'] = df_old['通貨'].astype(np.object)
+        df_old['収入'] = df_old['収入'].astype(np.int64)
+        df_old['支出'] = df_old['支出'].astype(np.int64)
+        df_old['振替'] = df_old['振替'].astype(np.int64)
+        df_old['残高調整'] = df_old['残高調整'].astype(np.int64)
+        df_old['通貨変換前の金額'] = df_old['通貨変換前の金額'].astype(np.int64)
+        df_old['集計の設定'] = df_old['集計の設定'].astype(np.object)
+
+        df_new['方法'] = df_new['方法'].astype(np.object)
+        df_new['カテゴリ'] = df_new['カテゴリ'].astype(np.object)
+        df_new['カテゴリの内訳'] = df_new['カテゴリの内訳'].astype(np.object)
+        df_new['支払元'] = df_new['支払元'].astype(np.object)
+        df_new['入金先'] = df_new['入金先'].astype(np.object)
+        df_new['品目'] = df_new['品目'].astype(np.object)
+        df_new['メモ'] = df_new['メモ'].astype(np.object)
+        df_new['お店'] = df_new['お店'].astype(np.object)
+        df_new['通貨'] = df_new['通貨'].astype(np.object)
+        df_new['収入'] = df_new['収入'].astype(np.int64)
+        df_new['支出'] = df_new['支出'].astype(np.int64)
+        df_new['振替'] = df_new['振替'].astype(np.int64)
+        df_new['残高調整'] = df_new['残高調整'].astype(np.int64)
+        df_new['通貨変換前の金額'] = df_new['通貨変換前の金額'].astype(np.int64)
+        df_new['集計の設定'] = df_new['集計の設定'].astype(np.object)
+
         comparison_df = df_old.merge(df_new,
                                      indicator=True,
                                      how='outer')
