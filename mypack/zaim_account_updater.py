@@ -39,7 +39,7 @@ class ZaimAccountUpdater(object):
 
         check_time = datetime.datetime.now() - datetime.timedelta(minutes=15)
         self.__exec_update()
-        time.sleep(10 * 60)
+        time.sleep(15 * 60)
         error_list = self.__check(check_time)
 
         snd_str = []
