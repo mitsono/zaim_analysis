@@ -20,3 +20,41 @@
 [0504/192032.848:ERROR:exception_snapshot_win.cc(98)] thread ID 2404 not found in process
 [0504/192032.932:ERROR:process_reader_win.cc(123)] NtOpenThread: {アクセス拒否} プロセスはオブジェクトのアクセスを要求しましたが、アクセス権が与えられていません。 (0xc0000022)
 [0504/192032.932:ERROR:exception_snapshot_win.cc(98)] thread ID 9344 not found in process
+[0508/164150.348:ERROR:process_reader_win.cc(123)] NtOpenThread: {アクセス拒否} プロセスはオブジェクトのアクセスを要求しましたが、アクセス権が与えられていません。 (0xc0000022)
+[0508/164150.353:ERROR:exception_snapshot_win.cc(98)] thread ID 7328 not found in process
+[0508/164150.433:ERROR:process_reader_win.cc(123)] NtOpenThread: {アクセス拒否} プロセスはオブジェクトのアクセスを要求しましたが、アクセス権が与えられていません。 (0xc0000022)
+[0508/164150.433:ERROR:exception_snapshot_win.cc(98)] thread ID 17684 not found in process
+[0508/164831.021:ERROR:process_reader_win.cc(151)] SuspendThread: アクセスが拒否されました。 (0x5)
+[0508/164831.022:ERROR:process_reader_win.cc(151)] SuspendThread: アクセスが拒否されました。 (0x5)
+[0508/164831.022:ERROR:process_reader_win.cc(151)] SuspendThread: アクセスが拒否されました。 (0x5)
+[0508/164831.022:ERROR:process_reader_win.cc(151)] SuspendThread: アクセスが拒否されました。 (0x5)
+[0508/164831.022:ERROR:process_reader_win.cc(151)] SuspendThread: アクセスが拒否されました。 (0x5)
+[0508/164831.022:ERROR:process_reader_win.cc(123)] NtOpenThread: {アクセス拒否} プロセスはオブジェクトのアクセスを要求しましたが、アクセス権が与えられていません。 (0xc0000022)
+[0508/164831.023:ERROR:exception_snapshot_win.cc(98)] thread ID 11384 not found in process
+[0508/164831.065:ERROR:process_reader_win.cc(151)] SuspendThread: アクセスが拒否されました。 (0x5)
+[0508/164831.069:ERROR:process_reader_win.cc(151)] SuspendThread: アクセスが拒否されました。 (0x5)
+[0508/164831.069:ERROR:process_reader_win.cc(151)] SuspendThread: アクセスが拒否されました。 (0x5)
+[0508/164831.069:ERROR:process_reader_win.cc(151)] SuspendThread: アクセスが拒否されました。 (0x5)
+[0508/164831.069:ERROR:process_reader_win.cc(151)] SuspendThread: アクセスが拒否されました。 (0x5)
+[0508/164831.069:ERROR:process_reader_win.cc(123)] NtOpenThread: {アクセス拒否} プロセスはオブジェクトのアクセスを要求しましたが、アクセス権が与えられていません。 (0xc0000022)
+[0508/164831.070:ERROR:exception_snapshot_win.cc(98)] thread ID 20156 not found in process
+[0508/164831.072:ERROR:process_reader_win.cc(123)] NtOpenThread: {アクセス拒否} プロセスはオブジェクトのアクセスを要求しましたが、アクセス権が与えられていません。 (0xc0000022)
+[0508/164831.072:ERROR:exception_snapshot_win.cc(98)] thread ID 20428 not found in process
+[0508/164831.129:ERROR:process_reader_win.cc(123)] NtOpenThread: {アクセス拒否} プロセスはオブジェクトのアクセスを要求しましたが、アクセス権が与えられていません。 (0xc0000022)
+[0508/164831.129:ERROR:exception_snapshot_win.cc(98)] thread ID 16044 not found in process
+[0508/165427.398:ERROR:process_reader_win.cc(123)] NtOpenThread: {アクセス拒否} プロセスはオブジェクトのアクセスを要求しましたが、アクセス権が与えられていません。 (0xc0000022)
+[0508/165427.399:ERROR:exception_snapshot_win.cc(98)] thread ID 18220 not found in process
+[0508/165427.435:ERROR:process_reader_win.cc(123)] NtOpenThread: {アクセス拒否} プロセスはオブジェクトのアクセスを要求しましたが、アクセス権が与えられていません。 (0xc0000022)
+[0508/165427.435:ERROR:exception_snapshot_win.cc(98)] thread ID 11820 not found in process
+[0508/165814.548:ERROR:process_reader_win.cc(123)] NtOpenThread: {アクセス拒否} プロセスはオブジェクトのアクセスを要求しましたが、アクセス権が与えられていません。 (0xc0000022)
+[0508/165814.555:ERROR:exception_snapshot_win.cc(98)] thread ID 15916 not found in process
+[0508/165814.590:ERROR:process_info.cc(329)] VirtualQueryEx: アクセスが拒否されました。 (0x5)
+[0508/165814.594:ERROR:process_info.cc(556)] ReadMemoryInfo failed
+[0508/165814.594:ERROR:process_memory_win.cc(39)] Failed to initialize ProcessInfo.
+[0508/165814.594:ERROR:scoped_process_suspend.cc(40)] NtResumeProcess: 既存のプロセスにアクセスしようとしました。 (0xc000010a)
+[0508/170754.274:ERROR:process_reader_win.cc(151)] SuspendThread: アクセスが拒否されました。 (0x5)
+[0508/170754.274:ERROR:process_reader_win.cc(151)] SuspendThread: アクセスが拒否されました。 (0x5)
+[0508/170754.275:ERROR:process_reader_win.cc(123)] NtOpenThread: {アクセス拒否} プロセスはオブジェクトのアクセスを要求しましたが、アクセス権が与えられていません。 (0xc0000022)
+[0508/170754.275:ERROR:exception_snapshot_win.cc(98)] thread ID 10288 not found in process
+[0508/170754.387:ERROR:process_reader_win.cc(123)] NtOpenThread: {アクセス拒否} プロセスはオブジェクトのアクセスを要求しましたが、アクセス権が与えられていません。 (0xc0000022)
+[0508/170754.387:ERROR:exception_snapshot_win.cc(98)] thread ID 9520 not found in process

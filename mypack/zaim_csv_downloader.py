@@ -1,12 +1,11 @@
 import time
-from selenium import webdriver
 import configparser
 from selenium.webdriver.support.ui import Select
-from selenium.webdriver.chrome.options import Options
 from bs4 import BeautifulSoup
 from datetime import date
 from dateutil.relativedelta import relativedelta
 import pandas
+import selenium_util
 
 
 class ZaimCsvDownloader(object):
@@ -24,39 +23,16 @@ class ZaimCsvDownloader(object):
         self.end_date = end_date
         self.encode_str = 'utf8'
         self.driver = self.__create_driver()
-
-    def download_zaim_csvfile(self):
-
         self.__login()
         time.sleep(5)
-        self.__downloadcsv()
-        time.sleep(30)
-        self.__save_balance_csv()
-        time.sleep(5)
-        self.__save_balance_dc_csv()
 
     def __create_driver(self):
-        options = Options()
-        options.add_argument('--disable-gpu')
-        options.add_argument('--disable-extensions')
-        options.add_argument('--proxy-server="direct://"')
-        options.add_argument('--proxy-bypass-list=*')
-        options.add_argument('--start-maximized')
-        options.add_argument('--headless')
-        driver = webdriver.Chrome(chrome_options=options)
-        driver.implicitly_wait(10)
 
         inifile = configparser.ConfigParser()
         inifile.read('../config.ini', 'UTF-8')
         dl_dir = inifile.get('chrome', 'dl_dir')
         # dl_dir = 'C:\\Users\mitsono\Downloads'
-        driver.command_executor._commands["send_command"] = (
-            "POST", '/session/$sessionId/chromium/send_command')
-        params = {'cmd': 'Page.setDownloadBehavior', 'params': {
-            'behavior': 'allow', 'downloadPath': dl_dir}}
-        driver.execute("send_command", params)
-
-        return driver
+        return selenium_util.create_chrome_driver(dl_dir, True)
 
     def __login(self):
         self.driver.get('https://auth.zaim.net')
@@ -66,6 +42,14 @@ class ZaimCsvDownloader(object):
             'data[User][password]').send_keys(self.pass_)
         self.driver.find_element_by_xpath(
             "//*[@id='UserLoginForm']/div[4]/input").click()
+
+    def download_zaim_csvfile(self):
+
+        self.__downloadcsv()
+        time.sleep(30)
+        self.__save_balance_csv()
+        time.sleep(5)
+        self.__save_balance_dc_csv()
 
     def __downloadcsv(self):
         self.driver.get('https://content.zaim.net/home/money')

@@ -114,7 +114,7 @@ class ZaimInfoCreater(object):
         df_wk_gr["date"] = self.end_date.strftime("%Y/%m/%d")
 
         # 退避
-        self.df_balance_af = df_wk_gr
+        self.df_balance_af = df_wk_gr.copy()
 
         for index, row in df_wk_gr.iterrows():
 
@@ -317,7 +317,7 @@ class ZaimInfoCreater(object):
         df_wk_gr = df_wk_gr.sort_values("予実")
 
         # 辞書に退避
-        self.df_dict[target_month] = df_wk_gr
+        self.df_dict[target_month] = df_wk_gr.copy()
 
         # 固定費
         ret_str.append("\n■固定費\n")
