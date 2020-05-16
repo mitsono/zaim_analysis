@@ -3,6 +3,7 @@ import zaim_info_creater
 import linepush
 from datetime import date
 from dateutil.relativedelta import relativedelta
+import rakuten_point_getter
 
 
 def main():
@@ -33,6 +34,10 @@ def main():
 
     # 終了処理
     zic.end()
+
+    # 楽天ポイント
+    rpg = rakuten_point_getter.RakutenPoint_Getter()
+    linepush.pushMessage(rpg.get_point())
 
 
 if __name__ == '__main__':
