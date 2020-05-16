@@ -25,7 +25,7 @@ class RakutenPoint_Getter(object):
                           inifile.get('rakuten', 'login_pass2'))]
 
         ret_str = []
-        ret_str.append("■楽天ポイント")
+        ret_str.append("■楽天ポイント\n")
         for id_pass in id_pass_list:
 
             self.driver = self.__create_driver()
