@@ -68,7 +68,10 @@ class RakutenPoint_Getter(object):
 
         ul = html.find('ul', attrs={'class': 'point-list-detail'})
         div = ul.find('div', attrs={'class': 'point-cnt'})
-        over_1m_ahead_lim_point = div.text.replace(",", "")
+        if div is None:
+            over_1m_ahead_lim_point = "0"
+        else:
+            over_1m_ahead_lim_point = div.text.replace(",", "")
 
         return (total_point, lim_point, over_1m_ahead_lim_point)
 
