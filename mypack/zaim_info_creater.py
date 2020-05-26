@@ -84,7 +84,7 @@ class ZaimInfoCreater(object):
         df_wk1 = df_wk_gr.loc[df_wk_gr["group"] == "証券_無リスク資産"]
         non_risk = df_wk1.sum()["value"]
         rate = round(risk / (risk + non_risk) * 100, 0)
-        cus_group_list += ["証券リスク比率(50%～70%)"]
+        cus_group_list += ["証券リスク比率(100-年齢 ±5%)"]
         cus_value_list += [str(rate) + "%"]
 
         # 確定拠出海外株比率(50%～70%)
@@ -93,7 +93,7 @@ class ZaimInfoCreater(object):
         df_wk1 = df_wk_gr.loc[df_wk_gr["group"] == "確定拠出_国内株"]
         kokunai = df_wk1.sum()["value"]
         rate = round(kokusai / (kokusai + kokunai) * 100, 0)
-        cus_group_list += ["確定拠出海外株比率(50%～70%)"]
+        cus_group_list += ["確定拠出海外株比率(60 ±5%)"]
         cus_value_list += [str(rate) + "%"]
 
         # 確定拠出リスク比率(50%～70%)
@@ -102,7 +102,7 @@ class ZaimInfoCreater(object):
         df_wk1 = df_wk_gr.loc[df_wk_gr["group"] == "確定拠出_無リスク資産"]
         non_risk = df_wk1.sum()["value"]
         rate = round(risk / (risk + non_risk) * 100, 0)
-        cus_group_list += ["確定拠出リスク比率(50%～70%)"]
+        cus_group_list += ["確定拠出リスク比率(100-年齢 ±5%)"]
         cus_value_list += [str(rate) + "%"]
 
         # 行追加
