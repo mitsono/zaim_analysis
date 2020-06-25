@@ -38,6 +38,7 @@ class ZaimAccountUpdater(object):
     def update(self):
 
         check_time = datetime.datetime.now() - datetime.timedelta(minutes=15)
+        check_time = check_time - datetime.timedelta(days=1)
         self.__exec_update()
         time.sleep(15 * 60)
         error_list = self.__check(check_time)
@@ -57,8 +58,8 @@ class ZaimAccountUpdater(object):
     def __exec_update(self):
 
         self.driver.get('https://zaim.net/online_accounts')
-        ele_tbl = self.driver.find_element_by_id("online-accounts")
-        ele_divs = ele_tbl.find_elements_by_xpath(".//div[@class='dropdown']")
+        ele_tbl = self.driver.find_element_by_id("root")
+        ele_divs = ele_tbl.find_elements_by_xpath(".//table/tbody/tr")
         try_cnt = len(ele_divs)
         err_cnt = 0
 
@@ -66,13 +67,12 @@ class ZaimAccountUpdater(object):
             try:
                 time.sleep(5)
                 self.driver.get('https://zaim.net/online_accounts')
-                ele_tbl = self.driver.find_element_by_id("online-accounts")
-                ele_divs = ele_tbl.find_elements_by_xpath(
-                    ".//div[@class='dropdown']")
+                ele_tbl = self.driver.find_element_by_id("root")
+                ele_divs = ele_tbl.find_elements_by_xpath(".//table/tbody/tr")
                 ele_divs[i].find_element_by_xpath(".//a").click()
                 ele_divs[i].find_element_by_xpath(
-                    ".//input[@name='commit']").click()
-            except selenium.common.exceptions.StaleElementReferenceException:
+                    ".//div[contains(text(), '連携データを更新')]").click()
+            except:
                 err_cnt += 1
 
         if err_cnt > 0:
@@ -83,21 +83,22 @@ class ZaimAccountUpdater(object):
         page = self.driver.page_source.encode('utf-8')
         html = BeautifulSoup(page, "lxml")
 
-        p_tbl = html.find('table', attrs={'id': 'online-accounts'})
-        trs = p_tbl.findAll('tr')
-
+        p_div = html.find('div', attrs={'id': 'root'})
+        tbls = p_div.find_all('table', recursive=False)
         error_list = []
-        for i in range(1, len(trs)):
-            td_name = trs[i].find('td', attrs={'class': 'name'})
-            title = td_name.find('strong').text
-            update_str = td_name.find(
-                'div', attrs={'class': 'text-muted'}).text
-            update_str = update_str.replace("\n", "").replace("最終更新 : ", "")
-            update_str = update_str[:16]
-            update_dt = datetime.datetime.strptime(
-                update_str, '%Y/%m/%d %H:%M')
-            if update_dt < check_dt and title not in self.IGNORE_TITLE_LIST:
-                error_list += [(title, update_dt)]
+        for j in range(len(tbls)):
+            tbody = tbls[j].find('tbody', recursive=False)
+            trs = tbody.find_all('tr')
+            for i in range(len(trs)):
+
+                td_name = trs[i].find_all('td', recursive=False)[0]
+                title = td_name.find('strong').text
+                update_str = td_name.find_all('div', recursive=False)[1].text
+                update_str = update_str.replace("\n", "").replace("最終更新：", "")
+                update_str = update_str[:11]
+                update_dt = datetime.datetime.strptime(update_str, '%Y年%m月%d日')
+                if update_dt < check_dt and title not in self.IGNORE_TITLE_LIST:
+                    error_list += [(title, update_dt)]
 
         return error_list
 
