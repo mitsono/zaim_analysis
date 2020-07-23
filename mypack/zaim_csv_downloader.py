@@ -119,7 +119,7 @@ class ZaimCsvDownloader(object):
         bl_title_list = []
         bl_value_list = []
 
-        for i in range(1, 4):
+        for i in range(1, len(c_trs)):
             c_tr = c_trs[i]
             c_div_title = c_tr.findAll('td')[0]
             c_div_value = c_tr.findAll('td')[4]
