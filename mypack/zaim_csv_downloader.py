@@ -11,7 +11,6 @@ import selenium_util
 class ZaimCsvDownloader(object):
 
     DL_BALANCE_PATH = '../work/zaim/dl_balance.csv'
-    DL_BALANCE_DC_PATH = '../work/zaim/dl_balance_dc.csv'
 
     def __init__(self, start_date, end_date):
 
@@ -48,8 +47,6 @@ class ZaimCsvDownloader(object):
         self.__downloadcsv()
         time.sleep(30)
         self.__save_balance_csv()
-        time.sleep(5)
-        self.__save_balance_dc_csv()
 
     def __downloadcsv(self):
         self.driver.get('https://content.zaim.net/home/money')
@@ -102,40 +99,10 @@ class ZaimCsvDownloader(object):
             bl_value_list += [value]
 
         bl_df = pandas.DataFrame(
-            data={'title': bl_title_list, 'value': bl_value_list}, columns={'title', 'value'})
+            data={'口座': bl_title_list, '残高': bl_value_list}, columns={'口座', '残高'})
 
         bl_df.to_csv(path_or_buf=self.DL_BALANCE_PATH,
-                     encoding="utf-8")
-
-    def __save_balance_dc_csv(self):
-        self.driver.get('https://zaim.net/securities/2697586')
-
-        page = self.driver.page_source.encode('utf-8')
-        html = BeautifulSoup(page, "lxml")
-        p_div = html.find('div', attrs={'class': 'description'})
-
-        c_trs = p_div.findAll('tr')
-
-        bl_title_list = []
-        bl_value_list = []
-
-        for i in range(1, len(c_trs)):
-            c_tr = c_trs[i]
-            c_div_title = c_tr.findAll('td')[0]
-            c_div_value = c_tr.findAll('td')[4]
-
-            title = c_div_title.text
-            value = c_div_value.text.replace(
-                ",", "").replace(chr(165), "")
-
-            bl_title_list += [title]
-            bl_value_list += [value]
-
-        bl_df = pandas.DataFrame(
-            data={'title': bl_title_list, 'value': bl_value_list}, columns={'title', 'value'})
-
-        bl_df.to_csv(path_or_buf=self.DL_BALANCE_DC_PATH,
-                     encoding="utf-8")
+                     encoding="utf-8", index=False)
 
 
 def main():
