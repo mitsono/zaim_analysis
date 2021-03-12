@@ -162,7 +162,7 @@ class ZaimInfoCreater(object):
         df_wk_1 = self.____get_tran_current_card(
             self.end_date.month, self.end_date.strftime("%Y/%m/%d"))
         df_wk_2 = self.____get_tran_current_card(
-            self.end_date.month, self.last_end_date.strftime("%Y/%m/%d"))
+            self.start_date.month, self.last_end_date.strftime("%Y/%m/%d"))
         df_wk = df_wk.append(
             df_wk_1, ignore_index=True)
         self.df_tran_merge_card = df_wk.append(
@@ -172,101 +172,80 @@ class ZaimInfoCreater(object):
         df_wk_1 = self.____get_tran_current_category(
             self.end_date.month, self.end_date.strftime("%Y/%m/%d"))
         df_wk_2 = self.____get_tran_current_category(
-            self.end_date.month, self.last_end_date.strftime("%Y/%m/%d"))
+            self.start_date.month, self.last_end_date.strftime("%Y/%m/%d"))
         df_wk = df_wk.append(
             df_wk_1, ignore_index=True)
         self.df_tran_merge_category = df_wk.append(
             df_wk_2, ignore_index=True)
 
-    def __get_stdout(self, df_tran, df_mst, key, value):
+    def __get_stdout(self, title, df_tran, df_mst, key, value):
+
+        display_name = "表示名"
+        date = "日付"
+        sort = "ソート順"
 
         # マスタ紐づけ
         df_wk = pandas.merge(
             df_tran, df_mst, on=[key], how="inner")
-
         # 表示名で集計
-        df_wk = df_wk.groupby(["表示名", "日付"], as_index=False).agg(
-            {value: 'sum', 'ソート順': 'max'})
-
-        # 口座、日付でソート
-        df_wk = df_wk.sort_values(["ソート順", "日付"])
-
+        df_wk = df_wk.groupby([display_name, date], as_index=False).agg(
+            {value: 'sum', sort: 'max'})
         # 万単位に変換
         df_wk[value] = round(df_wk[value] / 10000, 1)
 
+        # ループ用データセット生成
+        df_wk_mst = df_mst.copy()
+        df_wk_mst = df_wk_mst.groupby([display_name], as_index=False).agg(
+            {sort: 'max'})
+        df_wk_mst = df_wk_mst.sort_values([sort])
+
         # 出力
         ret_str = []
-        last_key = ""
-        for index, row in df_wk.iterrows():
+        ret_str.append("＜{}＞\n".format(title))
+        for index, row in df_wk_mst.iterrows():
 
-            current_key = row["表示名"]
-            if current_key != last_key:
-                # 見出し
-                ret_str.append("\n■{}\n".format(current_key))
-                last_key = current_key
+            # 見出し
+            ret_str.append("■{}\n".format(row[display_name]))
 
-            ret_str.append("{} {}\n".format(row[value], row["日付"],))
+            df_wk_loop = df_wk.loc[df_wk[display_name] == row[display_name]]
+            df_wk_loop = df_wk_loop.sort_values([date])
+
+            for index_loop, row_loop in df_wk_loop.iterrows():
+                ret_str.append("{} {}\n".format(
+                    row_loop[value], row_loop[date]))
+
+            ret_str.append("\n")
 
         return "".join(ret_str)
 
     def get_current_balance(self):
-        str_a = self.__get_stdout(
-            self.df_tran_current_balance, self.df_mst_balance, "口座", "残高")
+        str_a = self.__get_stdout("当月資産",
+                                  self.df_tran_current_balance, self.df_mst_balance, "口座", "残高")
         return str_a
 
     def get_current_card(self):
-        str_a = self.__get_stdout(
-            self.df_tran_current_card, self.df_mst_card, "支払元", "支出")
+        str_a = self.__get_stdout("当月カード利用",
+                                  self.df_tran_current_card, self.df_mst_card, "支払元", "支出")
         return str_a
 
     def get_current_category(self):
-        str_a = self.__get_stdout(
-            self.df_tran_current_category, self.df_mst_category, "カテゴリ", "支出")
-        return str_a
-
-    def get_current_balance_group(self):
-        str_a = self.__get_stdout(
-            self.df_tran_current_balance, self.df_mst_balance_group, "口座", "残高")
-        return str_a
-
-    def get_current_card_group(self):
-        str_a = self.__get_stdout(
-            self.df_tran_current_card, self.df_mst_card_group, "支払元", "支出")
-        return str_a
-
-    def get_current_category_group(self):
-        str_a = self.__get_stdout(
-            self.df_tran_current_category, self.df_mst_category_group, "カテゴリ", "支出")
-        return str_a
-
-    def get_merge_balance(self):
-        str_a = self.__get_stdout(
-            self.df_tran_merge_balance, self.df_mst_balance, "口座", "残高")
-        return str_a
-
-    def get_merge_card(self):
-        str_a = self.__get_stdout(
-            self.df_tran_merge_card, self.df_mst_card, "支払元", "支出")
-        return str_a
-
-    def get_merge_category(self):
-        str_a = self.__get_stdout(
-            self.df_tran_merge_category, self.df_mst_category, "カテゴリ", "支出")
+        str_a = self.__get_stdout("当月支出",
+                                  self.df_tran_current_category, self.df_mst_category, "カテゴリ", "支出")
         return str_a
 
     def get_merge_balance_group(self):
-        str_a = self.__get_stdout(
-            self.df_tran_merge_balance, self.df_mst_balance_group, "口座", "残高")
+        str_a = self.__get_stdout("カテゴリ別資産推移",
+                                  self.df_tran_merge_balance, self.df_mst_balance_group, "口座", "残高")
         return str_a
 
     def get_merge_card_group(self):
-        str_a = self.__get_stdout(
-            self.df_tran_merge_card, self.df_mst_card_group, "支払元", "支出")
+        str_a = self.__get_stdout("カテゴリ別カード利用推移",
+                                  self.df_tran_merge_card, self.df_mst_card_group, "支払元", "支出")
         return str_a
 
     def get_merge_category_group(self):
-        str_a = self.__get_stdout(
-            self.df_tran_merge_category, self.df_mst_category_group, "カテゴリ", "支出")
+        str_a = self.__get_stdout("カテゴリ別支出推移",
+                                  self.df_tran_merge_category, self.df_mst_category_group, "カテゴリ", "支出")
         return str_a
 
     def end(self):
@@ -285,13 +264,14 @@ def main():
     last_start_date = last_end_date.replace(day=1)
 
     zic = ZaimInfoCreater(last_start_date, last_end_date, today_date)
-    linepush.pushMessage(zic.get_current_balance())
-    linepush.pushMessage(zic.get_current_card())
-    linepush.pushMessage(zic.get_current_category())
 
     linepush.pushMessage(zic.get_merge_balance_group())
     linepush.pushMessage(zic.get_merge_card_group())
     linepush.pushMessage(zic.get_merge_category_group())
+    linepush.pushMessage(zic.get_current_balance())
+    linepush.pushMessage(zic.get_current_card())
+    linepush.pushMessage(zic.get_current_category())
+
     zic.end()
 
 
