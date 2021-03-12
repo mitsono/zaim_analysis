@@ -18,7 +18,8 @@ def main():
     zdl.download_zaim_csvfile()
 
     # 先月の予実分析をLineに通知
-    zic = zaim_info_creater.ZaimInfoCreater(last_month_start_date, today_date)
+    zic = zaim_info_creater.ZaimInfoCreater(
+        last_month_start_date, last_month_end_date, today_date)
 
     linepush.pushMessage(zic.get_merge_balance_group())
     linepush.pushMessage(zic.get_merge_card_group())
