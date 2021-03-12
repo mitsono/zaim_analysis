@@ -1,4 +1,5 @@
 import configparser
+import numpy as np
 from datetime import date
 from dateutil.relativedelta import relativedelta
 import glob
@@ -245,19 +246,78 @@ class ZaimInfoCreater(object):
 
         return "".join(ret_str)
 
+    def __get_userate_str(self, df_wk, key, value, display_name, sort, buget, vsbuget):
+
+        ret_str = []
+
+        for index, row in df_wk.iterrows():
+
+            if np.isinf(row[vsbuget]):
+                rate = "-"
+            else:
+                rate = int(row[vsbuget])
+            rate = str(rate) + "%"
+            rate = rate.rjust(5)
+
+            perform = row[value]
+            perform = str(perform).rjust(4)
+
+            budget = row[buget]
+            budget = str(budget).rjust(4)
+
+            category = row[display_name]
+            ret_str.append("{} {} / {} {}\n".format(rate,
+                                                    perform, budget, category))
+
+        return "".join(ret_str)
+
+    def __get_over_budget_str(self, df_wk_gr_high, std_userate, key, value, display_name, sort, buget, vsbuget):
+        ret_str = []
+        df_wk_gr = df_wk_gr_high
+
+        df_wk_gr["中途予算"] = df_wk_gr[buget] * std_userate / 100
+        df_wk_gr["超過金額"] = df_wk_gr[value] - df_wk_gr["中途予算"]
+
+        # ソート
+        df_wk_gr = df_wk_gr.sort_values("超過金額", ascending=False)
+
+        over_budget_sum = df_wk_gr["超過金額"].sum()
+        ret_str.append("\n ＜予算超過：{}＞\n".format(over_budget_sum))
+        for index, row in df_wk_gr.iterrows():
+
+            over_budget = row["超過金額"]
+            over_budget = str(round(over_budget, 1)).rjust(4)
+
+            perform = row[value]
+            perform = str(perform).rjust(4)
+
+            budget = row["中途予算"]
+            budget = str(budget).rjust(4)
+
+            category = row[display_name]
+
+            ret_str.append("　{} {} / {} {}\n".format(over_budget,
+                                                     perform, budget, category))
+        return "".join(ret_str)
+
     def __get_category_stdout(self, use_rate, df_tran, df_mst, date, key, value):
 
         display_name = "表示名"
         sort = "ソート順"
+        buget = "予算"
+        vsbuget = "予実"
 
         # マスタ紐づけ
         df_wk = pandas.merge(
             df_tran, df_mst, on=[key], how="inner")
         # 表示名で集計
         df_wk = df_wk.groupby([display_name], as_index=False).agg(
-            {value: 'sum', sort: 'max'})
+            {value: 'sum', sort: 'max', buget: 'max'})
         # 万単位に変換
         df_wk[value] = round(df_wk[value] / 10000, 1)
+        df_wk[buget] = round(df_wk[buget] / 10000, 1)
+        #  予実列追加
+        df_wk[vsbuget] = df_wk[value] / df_wk[buget] * 100
 
         # 出力
         ret_str = []
@@ -265,11 +325,31 @@ class ZaimInfoCreater(object):
         # 見出し出力
         ret_str.append("{}月 目安使用率：{}%\n".format(
             date.month, use_rate))
-        for index, row in df_wk.iterrows():
+        # 支出合計
+        sum_spending = df_wk[value].sum()
+        ret_str.append("支出合計：{}\n".format(
+            sum_spending))
 
-            wk_value = str(row[value]).rjust(4)
-            wk_display_name = row[display_name]
-            ret_str.append("{} {}\n".format(wk_value, wk_display_name))
+        # 固定費
+        ret_str.append("\n■固定費\n")
+        df_wk_fix = df_wk.loc[df_wk[display_name].str.contains("_固_")]
+        ret_str.append(self._ZaimInfoCreater__get_userate_str(
+            df_wk_fix, key, value, display_name, sort, buget, vsbuget))
+
+        df_wk_fix_var = df_wk.loc[~df_wk[display_name].str.contains("_固_")]
+        # 標準未満
+        ret_str.append("\n■順調\n")
+        df_wk_low = df_wk_fix_var.loc[df_wk_fix_var[vsbuget] <= use_rate]
+        ret_str.append(self._ZaimInfoCreater__get_userate_str(
+            df_wk_low, key, value, display_name, sort, buget, vsbuget))
+
+        # 標準以上
+        ret_str.append("\n■やばし\n")
+        df_wk_high = df_wk_fix_var.loc[df_wk_fix_var["予実"] > use_rate]
+        ret_str.append(self._ZaimInfoCreater__get_userate_str(
+            df_wk_high, key, value, display_name, sort, buget, vsbuget))
+        ret_str.append(self._ZaimInfoCreater__get_over_budget_str(
+            df_wk_high, use_rate, key, value, display_name, sort, buget, vsbuget))
 
         return "".join(ret_str)
 
