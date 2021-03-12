@@ -26,6 +26,7 @@ def main():
     linepush.pushMessage(zic.get_merge_category_group())
     linepush.pushMessage(zic.get_current_balance())
     linepush.pushMessage(zic.get_current_card())
+    linepush.pushMessage(zic.get_current_last_category())
     linepush.pushMessage(zic.get_current_category())
 
     # 終了処理
