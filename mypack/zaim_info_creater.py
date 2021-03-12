@@ -282,17 +282,17 @@ class ZaimInfoCreater(object):
         df_wk_gr = df_wk_gr.sort_values("超過金額", ascending=False)
 
         over_budget_sum = df_wk_gr["超過金額"].sum()
-        ret_str.append("\n ＜予算超過：{}＞\n".format(over_budget_sum))
+        ret_str.append("\n ＜予算超過：{}＞\n".format(round(over_budget_sum, 1)))
         for index, row in df_wk_gr.iterrows():
 
             over_budget = row["超過金額"]
             over_budget = str(round(over_budget, 1)).rjust(4)
 
             perform = row[value]
-            perform = str(perform).rjust(4)
+            perform = str(round(perform, 1)).rjust(4)
 
             budget = row["中途予算"]
-            budget = str(budget).rjust(4)
+            budget = str(round(budget, 1)).rjust(4)
 
             category = row[display_name]
 
