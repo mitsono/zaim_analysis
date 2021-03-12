@@ -20,17 +20,12 @@ def main():
     # 先月の予実分析をLineに通知
     zic = zaim_info_creater.ZaimInfoCreater(last_month_start_date, today_date)
 
-    balance_str = zic.get_balance()
-    lastmonth_userate_str = zic.get_lastmonth_userate()
-    currentmonth_userate_str = zic.get_currentmonth_userate()
-    diff_userate_str = zic.get_diff_userate()
-    summary_str = zic.get_summary()
-
-    linepush.pushMessage(diff_userate_str)
-    linepush.pushMessage(summary_str)
-    linepush.pushMessage(balance_str)
-    linepush.pushMessage(lastmonth_userate_str)
-    linepush.pushMessage(currentmonth_userate_str)
+    linepush.pushMessage(zic.get_merge_balance_group())
+    linepush.pushMessage(zic.get_merge_card_group())
+    linepush.pushMessage(zic.get_merge_category_group())
+    linepush.pushMessage(zic.get_current_balance())
+    linepush.pushMessage(zic.get_current_card())
+    linepush.pushMessage(zic.get_current_category())
 
     # 終了処理
     zic.end()
