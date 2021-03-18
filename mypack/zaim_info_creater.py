@@ -436,7 +436,7 @@ class ZaimInfoCreater(object):
         one_years_ago_str = one_years_ago.strftime("%Y/%m/%d")
 
         ret_df = pandas.DataFrame(
-            columns=["カテゴリ", "3ヵ月平均", "6ヵ月平均", "12ヵ月平均", "3ヵ月予実割合"])
+            columns=["カテゴリ", "3ヵ月平均", "6ヵ月平均", "12ヵ月平均", "12ヵ月予実割合"])
 
         for index, row in mst_df.iterrows():
 
@@ -461,16 +461,16 @@ class ZaimInfoCreater(object):
                                      >= one_years_ago_str]
             one_years_ave = round(wk_df.sum()["支出"] / 12, 0)
 
-            # 3ヵ月予実割合
+            # 12ヵ月予実割合
             if row["予算"] > 0:
-                three_months_vs_budget = round(
-                    three_months_ave / row["予算"] * 100, 0)
+                one_years_vs_budget = round(
+                    one_years_ave / row["予算"] * 100, 0)
             else:
-                three_months_vs_budget = 999
+                one_years_vs_budget = 999
 
             # 行追加
             ret_df = ret_df.append(
-                {"カテゴリ": row["カテゴリ"], "3ヵ月平均": three_months_ave, "6ヵ月平均": six_months_ave, "12ヵ月平均": one_years_ave, "3ヵ月予実割合": three_months_vs_budget}, ignore_index=True)
+                {"カテゴリ": row["カテゴリ"], "3ヵ月平均": three_months_ave, "6ヵ月平均": six_months_ave, "12ヵ月平均": one_years_ave, "12ヵ月予実割合": one_years_vs_budget}, ignore_index=True)
 
         return ret_df
 
@@ -561,7 +561,7 @@ class ZaimInfoCreater(object):
         # カテゴリ別支出推移の出力
         df_wk = pandas.merge(
             wk_mst_df, wk_ave_df, on=["カテゴリ"], how="inner")
-        df_wk = df_wk.sort_values(["3ヵ月予実割合"])
+        df_wk = df_wk.sort_values(["12ヵ月予実割合"])
 
         # 万単位に変換
         df_wk["3ヵ月平均"] = round(df_wk["3ヵ月平均"] / 10000, 1)
