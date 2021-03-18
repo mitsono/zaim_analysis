@@ -1,6 +1,7 @@
 import configparser
 import numpy as np
 from datetime import date
+import datetime
 from dateutil.relativedelta import relativedelta
 import glob
 import os
@@ -181,6 +182,23 @@ class ZaimInfoCreater(object):
         self.df_tran_merge_category = df_wk.append(
             self.df_tran_current_last_category, ignore_index=True)
 
+    def __get_stdout_2(self, title, df_tran, key, value, rjust_num):
+
+        df_wk = df_tran.copy()
+        # 万単位に変換
+        df_wk[value] = round(df_wk[value] / 10000, 1)
+
+        # 出力
+        ret_str = []
+        ret_str.append("＜{}＞\n".format(title))
+        for index, row in df_wk.iterrows():
+
+            wk_value = str(row[value]).rjust(4)
+            wk_key = row[key]
+            ret_str.append("{} {}\n".format(wk_value, wk_key))
+
+        return "".join(ret_str)
+
     def __get_stdout(self, title, df_tran, df_mst, key, value):
 
         display_name = "表示名"
@@ -330,18 +348,18 @@ class ZaimInfoCreater(object):
         ret_str.append("支出合計：{}\n".format(
             sum_spending))
 
-        # 固定費
-        ret_str.append("\n■固定費\n")
-        df_wk_fix = df_wk.loc[df_wk[display_name].str.contains("_固_")]
-        ret_str.append(self._ZaimInfoCreater__get_userate_str(
-            df_wk_fix, key, value, display_name, sort, buget, vsbuget))
+        # # 固定費
+        # ret_str.append("\n■固定費\n")
+        # df_wk_fix = df_wk.loc[df_wk[display_name].str.contains("_固_")]
+        # ret_str.append(self._ZaimInfoCreater__get_userate_str(
+        #     df_wk_fix, key, value, display_name, sort, buget, vsbuget))
 
         df_wk_fix_var = df_wk.loc[~df_wk[display_name].str.contains("_固_")]
-        # 標準未満
-        ret_str.append("\n■順調\n")
-        df_wk_low = df_wk_fix_var.loc[df_wk_fix_var[vsbuget] <= use_rate]
-        ret_str.append(self._ZaimInfoCreater__get_userate_str(
-            df_wk_low, key, value, display_name, sort, buget, vsbuget))
+        # # 標準未満
+        # ret_str.append("\n■順調\n")
+        # df_wk_low = df_wk_fix_var.loc[df_wk_fix_var[vsbuget] <= use_rate]
+        # ret_str.append(self._ZaimInfoCreater__get_userate_str(
+        #     df_wk_low, key, value, display_name, sort, buget, vsbuget))
 
         # 標準以上
         ret_str.append("\n■やばし\n")
@@ -392,6 +410,187 @@ class ZaimInfoCreater(object):
                                         self.df_tran_merge_category, self.df_mst_category_group, "カテゴリ", "支出")
         return str_a
 
+    def __get_category_average(self, mst_df, tran_df):
+        # 支出毎に直近3ヵ月、6ヵ月、12ヵ月の支出平均を算出
+        three_months_ago_m = self.end_date.month - 3
+        three_months_ago_y = self.end_date.year
+        if three_months_ago_m < 1:
+            three_months_ago_m = three_months_ago_m + 12
+            three_months_ago_y = three_months_ago_y - 1
+        three_months_ago = date(
+            three_months_ago_y, three_months_ago_m, 1)
+
+        six_months_ago_m = self.end_date.month - 6
+        six_months_ago_y = self.end_date.year
+        if six_months_ago_m < 1:
+            six_months_ago_m = six_months_ago_m + 12
+            six_months_ago_y = six_months_ago_y - 1
+        six_months_ago = date(
+            six_months_ago_y, six_months_ago_m, 1)
+        one_years_ago = date(
+            self.end_date.year - 1, self.end_date.month, 1)
+
+        last_end_date_str = self.last_end_date.strftime("%Y/%m/%d")
+        three_months_ago_str = three_months_ago.strftime("%Y/%m/%d")
+        six_months_ago_str = six_months_ago.strftime("%Y/%m/%d")
+        one_years_ago_str = one_years_ago.strftime("%Y/%m/%d")
+
+        ret_df = pandas.DataFrame(
+            columns=["カテゴリ", "3ヵ月平均", "6ヵ月平均", "12ヵ月平均", "3ヵ月予実割合"])
+
+        for index, row in mst_df.iterrows():
+
+            # カテゴリ・先月末以前で抽出
+            loop_tran_df = tran_df.loc[tran_df["カテゴリ"]
+                                       == row["カテゴリ"]]
+            loop_tran_df = loop_tran_df.loc[loop_tran_df["日付"]
+                                            <= last_end_date_str]
+
+            # 3ヵ月分
+            wk_df = loop_tran_df.loc[loop_tran_df["日付"]
+                                     >= three_months_ago_str]
+            three_months_ave = round(wk_df.sum()["支出"]/3, 0)
+
+            # 6ヵ月分
+            wk_df = loop_tran_df.loc[loop_tran_df["日付"]
+                                     >= six_months_ago_str]
+            six_months_ave = round(wk_df.sum()["支出"]/6, 0)
+
+            # 12ヵ月分
+            wk_df = loop_tran_df.loc[loop_tran_df["日付"]
+                                     >= one_years_ago_str]
+            one_years_ave = round(wk_df.sum()["支出"] / 12, 0)
+
+            # 3ヵ月予実割合
+            if row["予算"] > 0:
+                three_months_vs_budget = round(
+                    three_months_ave / row["予算"] * 100, 0)
+            else:
+                three_months_vs_budget = 999
+
+            # 行追加
+            ret_df = ret_df.append(
+                {"カテゴリ": row["カテゴリ"], "3ヵ月平均": three_months_ave, "6ヵ月平均": six_months_ave, "12ヵ月平均": one_years_ave, "3ヵ月予実割合": three_months_vs_budget}, ignore_index=True)
+
+        return ret_df
+
+    def __get_total_spend_average(self, total_tran_df):
+
+        wk_df = total_tran_df.copy()
+        # ソート
+        wk_df = wk_df.sort_values("日付", ascending=True)
+        ret_df = pandas.DataFrame(columns=["日付", "支出"])
+
+        for index, row in wk_df.iterrows():
+
+            start_date = datetime.datetime.strptime(row["日付"], "%Y/%m/%d")
+            end_date = date(
+                start_date.year + 1, start_date.month, 1)
+            end_date = end_date - relativedelta(days=1)
+
+            start_date_str = start_date.strftime("%Y/%m/%d")
+            end_date_str = end_date.strftime("%Y/%m/%d")
+
+            loop_df = wk_df.loc[wk_df["日付"] >= start_date_str]
+            loop_df = loop_df.loc[wk_df["日付"] <= end_date_str]
+
+            # 12ヵ月平均のレコードを生成
+            date_value = end_date_str
+            ave_value = round(loop_df["支出"].sum() / 12, 0)
+
+            ret_df = ret_df.append(
+                {"日付": date_value, "支出": ave_value}, ignore_index=True)
+
+            if wk_df["日付"].max() < end_date_str:
+                break
+
+        return ret_df
+
+    def get_merge_category_total(self):
+
+        wk_tran_df = self.df_tran_merge_category.copy()
+
+        # 合計支出推移
+        wk_total_df = wk_tran_df.groupby("日付").sum()["支出"].reset_index()
+
+        # # 出力
+        ret_str = []
+
+        # 合計支出推移の出力
+        wk_total_df = wk_total_df.sort_values(["日付"])
+        total_spend_str = self.__get_stdout_2(
+            "合計支出推移", wk_total_df, "日付", "支出", 4)
+        ret_str.append(total_spend_str)
+        ret_str.append("\n")
+
+        return "".join(ret_str)
+
+    def get_merge_category_total_ave(self):
+
+        wk_tran_df = self.df_tran_merge_category.copy()
+
+        # 合計支出推移
+        wk_total_df = wk_tran_df.groupby("日付").sum()["支出"].reset_index()
+
+        # 12ヵ月平均合計支出
+        wk_total_ave_df = self.__get_total_spend_average(wk_total_df)
+
+        # # 出力
+        ret_str = []
+
+        # 合計支出（12ヵ月平均）推移の出力
+        wk_total_ave_df = wk_total_ave_df.sort_values(["日付"])
+        total_ave_str = self.__get_stdout_2(
+            "合計支出（12ヵ月平均）推移", wk_total_ave_df, "日付", "支出", 4)
+        ret_str.append(total_ave_str)
+        ret_str.append("\n")
+
+        return "".join(ret_str)
+
+    def get_merge_category_cate(self):
+
+        wk_mst_df = self.df_mst_category.copy()
+        wk_tran_df = self.df_tran_merge_category.copy()
+
+        # 支出毎に直近3ヵ月、6ヵ月、12ヵ月の支出平均を算出
+        wk_ave_df = self.__get_category_average(wk_mst_df, wk_tran_df)
+
+        # # 出力
+        ret_str = []
+
+        # カテゴリ別支出推移の出力
+        df_wk = pandas.merge(
+            wk_mst_df, wk_ave_df, on=["カテゴリ"], how="inner")
+        df_wk = df_wk.sort_values(["3ヵ月予実割合"])
+
+        # 万単位に変換
+        df_wk["3ヵ月平均"] = round(df_wk["3ヵ月平均"] / 10000, 1)
+        df_wk["6ヵ月平均"] = round(df_wk["6ヵ月平均"] / 10000, 1)
+        df_wk["12ヵ月平均"] = round(df_wk["12ヵ月平均"] / 10000, 1)
+        df_wk["予算"] = round(df_wk["予算"] / 10000, 1)
+        wk_tran_df["支出"] = round(wk_tran_df["支出"] / 10000, 1)
+
+        ret_str.append("＜{}＞\n".format("カテゴリ別支出推移"))
+        for index, row in df_wk.iterrows():
+            df_wk_loop = wk_tran_df.loc[wk_tran_df["カテゴリ"] == row["カテゴリ"]]
+            df_wk_loop = df_wk_loop.sort_values(["日付"])
+
+            ret_str.append("■{}（予算：{}）\n".format(row["カテゴリ"], row["予算"]))
+            for index_loop, row_loop in df_wk_loop.iterrows():
+                loop_value = str(row_loop["支出"]).rjust(4)
+                ret_str.append("{} {}\n".format(
+                    loop_value, row_loop["日付"]))
+
+            three_m_value = str(row["3ヵ月平均"]).rjust(4)
+            six_m_value = str(row["6ヵ月平均"]).rjust(4)
+            one_y_value = str(row["12ヵ月平均"]).rjust(4)
+            ret_str.append("{} {} {}\n".format(
+                three_m_value, six_m_value, one_y_value))
+
+            ret_str.append("\n")
+
+        return "".join(ret_str)
+
     def end(self):
         self.df_tran_merge_balance.to_csv(self.TRAN_BALANCE_PATH,
                                           encoding="utf-8", index=False)
@@ -399,6 +598,59 @@ class ZaimInfoCreater(object):
                                        encoding="utf-8", index=False)
         self.df_tran_merge_category.to_csv(self.TRAN_CATEGORY_PATH,
                                            encoding="utf-8", index=False)
+
+    def create_old_tran_category_file(self):
+
+        df_wk1 = self.____get_tran_current_category(
+            2, "2020/02/28")
+        df_wk2 = self.____get_tran_current_category(
+            3, "2020/03/28")
+        df_wk3 = self.____get_tran_current_category(
+            4, "2020/04/28")
+        df_wk4 = self.____get_tran_current_category(
+            5, "2020/05/28")
+        df_wk5 = self.____get_tran_current_category(
+            6, "2020/06/28")
+        df_wk6 = self.____get_tran_current_category(
+            7, "2020/07/28")
+        df_wk7 = self.____get_tran_current_category(
+            8, "2020/08/28")
+        df_wk8 = self.____get_tran_current_category(
+            9, "2020/09/28")
+        df_wk9 = self.____get_tran_current_category(
+            10, "2020/10/28")
+        df_wk10 = self.____get_tran_current_category(
+            11, "2020/11/28")
+        df_wk11 = self.____get_tran_current_category(
+            12, "2020/12/28")
+        df_wk12 = self.____get_tran_current_category(
+            1, "2021/01/28")
+
+        df_wk = df_wk1.copy()
+        df_wk = df_wk.append(
+            df_wk2, ignore_index=True)
+        df_wk = df_wk.append(
+            df_wk3, ignore_index=True)
+        df_wk = df_wk.append(
+            df_wk4, ignore_index=True)
+        df_wk = df_wk.append(
+            df_wk5, ignore_index=True)
+        df_wk = df_wk.append(
+            df_wk6, ignore_index=True)
+        df_wk = df_wk.append(
+            df_wk7, ignore_index=True)
+        df_wk = df_wk.append(
+            df_wk8, ignore_index=True)
+        df_wk = df_wk.append(
+            df_wk9, ignore_index=True)
+        df_wk = df_wk.append(
+            df_wk10, ignore_index=True)
+        df_wk = df_wk.append(
+            df_wk11, ignore_index=True)
+        df_wk = df_wk.append(
+            df_wk12, ignore_index=True)
+        df_wk.to_csv(
+            self.TRAN_CATEGORY_PATH, encoding="utf-8", index=False)
 
 
 def main():
@@ -409,15 +661,15 @@ def main():
 
     zic = ZaimInfoCreater(last_start_date, last_end_date, today_date)
 
-    # print(zic.get_merge_balance_group())
-    # print(zic.get_merge_card_group())
-    # print(zic.get_merge_category_group())
-    # print(zic.get_current_balance())
-    # print(zic.get_current_card())
-    print(zic.get_current_last_category())
-    print(zic.get_current_category())
+    linepush.pushMessage(zic.get_merge_balance_group())
+    linepush.pushMessage(zic.get_merge_category_cate())
+    linepush.pushMessage(zic.get_current_balance())
+    linepush.pushMessage(zic.get_merge_category_total())
+    linepush.pushMessage(zic.get_merge_category_total_ave())
+    linepush.pushMessage(zic.get_current_last_category())
+    linepush.pushMessage(zic.get_current_category())
 
-    zic.end()
+    # zic.end()
 
 
 if __name__ == '__main__':
