@@ -555,13 +555,23 @@ class ZaimInfoCreater(object):
         # 支出毎に直近3ヵ月、6ヵ月、12ヵ月の支出平均を算出
         wk_ave_df = self.__get_category_average(wk_mst_df, wk_tran_df)
 
+        # 直近12ヵ月分のみ出力
+        one_years_ago = date(
+            self.end_date.year - 1, self.end_date.month, 1)
+        one_years_ago_str = one_years_ago.strftime("%Y/%m/%d")
+        wk_tran_df = wk_tran_df.loc[wk_tran_df["日付"]
+                                    >= one_years_ago_str]
+
+        # 詳細出力対象のみ出力
+        df_wk = wk_mst_df.loc[wk_mst_df["詳細出力フラグ"] == 1]
+
         # # 出力
         ret_str = []
 
         # カテゴリ別支出推移の出力
         df_wk = pandas.merge(
-            wk_mst_df, wk_ave_df, on=["カテゴリ"], how="inner")
-        df_wk = df_wk.sort_values(["12ヵ月予実割合"])
+            df_wk, wk_ave_df, on=["カテゴリ"], how="inner")
+        df_wk = df_wk.sort_values(["ソート順"])
 
         # 万単位に変換
         df_wk["3ヵ月平均"] = round(df_wk["3ヵ月平均"] / 10000, 1)
@@ -668,6 +678,8 @@ def main():
     linepush.pushMessage(zic.get_merge_category_total_ave())
     linepush.pushMessage(zic.get_current_last_category())
     linepush.pushMessage(zic.get_current_category())
+
+    # zic.create_old_tran_category_file()
 
     # zic.end()
 
