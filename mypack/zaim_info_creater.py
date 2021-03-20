@@ -328,6 +328,10 @@ class ZaimInfoCreater(object):
         # マスタ紐づけ
         df_wk = pandas.merge(
             df_tran, df_mst, on=[key], how="inner")
+
+        # 詳細出力対象のみ出力
+        df_wk = df_wk.loc[df_wk["詳細出力フラグ"] == 1]
+
         # 表示名で集計
         df_wk = df_wk.groupby([display_name], as_index=False).agg(
             {value: 'sum', sort: 'max', buget: 'max'})
@@ -355,11 +359,12 @@ class ZaimInfoCreater(object):
         #     df_wk_fix, key, value, display_name, sort, buget, vsbuget))
 
         df_wk_fix_var = df_wk.loc[~df_wk[display_name].str.contains("_固_")]
-        # # 標準未満
-        # ret_str.append("\n■順調\n")
-        # df_wk_low = df_wk_fix_var.loc[df_wk_fix_var[vsbuget] <= use_rate]
-        # ret_str.append(self._ZaimInfoCreater__get_userate_str(
-        #     df_wk_low, key, value, display_name, sort, buget, vsbuget))
+        df_wk_fix_var = df_wk_fix_var.sort_values([vsbuget])
+        # 標準未満
+        ret_str.append("\n■順調\n")
+        df_wk_low = df_wk_fix_var.loc[df_wk_fix_var[vsbuget] <= use_rate]
+        ret_str.append(self._ZaimInfoCreater__get_userate_str(
+            df_wk_low, key, value, display_name, sort, buget, vsbuget))
 
         # 標準以上
         ret_str.append("\n■やばし\n")
