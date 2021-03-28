@@ -28,6 +28,7 @@ def main():
     linepush.pushMessage(zic.get_merge_category_total_ave())
     linepush.pushMessage(zic.get_current_last_category())
     linepush.pushMessage(zic.get_current_category())
+    linepush.pushMessage(zic.get_merge_category_vs_budget())
 
     # 終了処理
     zic.end()
