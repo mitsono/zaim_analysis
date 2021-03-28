@@ -103,7 +103,14 @@ class ZaimInfoCreater(object):
 
         # 前回トランファイルから今回分削除
         start_date_str = self.start_date.strftime("%Y/%m/%d")
-        last_15_date_str = self.start_date.replace(day=15).strftime("%Y/%m/%d")
+
+        if self.end_date.day <= 15:
+            last_15_date_str = self.start_date.replace(
+                day=15).strftime("%Y/%m/%d")
+        else:
+            last_15_date_str = self.end_date.replace(
+                day=15).strftime("%Y/%m/%d")
+
         self.df_tran_before_balance = self.df_tran_before_balance.loc[
             self.df_tran_before_balance["日付"] <= last_15_date_str]
         self.df_tran_before_card = self.df_tran_before_card.loc[
@@ -606,6 +613,67 @@ class ZaimInfoCreater(object):
 
         return "".join(ret_str)
 
+    def get_merge_category_vs_budget(self):
+
+        wk_mst_df = self.df_mst_category.copy()
+        wk_tran_df = self.df_tran_merge_category.copy()
+
+        # 今年分のみ抽出
+        ex_start_date_str = self.end_date.replace(
+            month=1, day=1).strftime("%Y/%m/%d")
+        wk_tran_df = wk_tran_df.loc[wk_tran_df["日付"] >= ex_start_date_str]
+
+        # 予算算出のための係数を算出（1/1から当日までの日数 / 365 * 12)
+        dt = self.end_date - self.end_date.replace(month=1, day=1)
+        rate = dt.days / 365 * 12
+
+        # 現時点の予算累計列追加
+        wk_mst_df["予算累計"] = wk_mst_df["予算"] * rate
+
+        # 支出のカテゴリ別合計を算出し、マスタに紐づけ
+        df_total = wk_tran_df.groupby(
+            ["カテゴリ"], as_index=False).agg({"支出": "sum"})
+        wk_mst_df = pandas.merge(wk_mst_df, df_total, on=["カテゴリ"], how="inner")
+        wk_mst_df["予算累計超過"] = wk_mst_df["支出"] - wk_mst_df["予算累計"]
+        wk_mst_df = wk_mst_df.sort_values("予算累計超過", ascending=False)
+
+        # 支出カテゴリ毎の予算超過額を出力
+        wk_mst_df = wk_mst_df.loc[wk_mst_df["詳細出力フラグ"] > 0]
+
+        # 月別の超過額を算出
+        df_month = pandas.merge(wk_tran_df, wk_mst_df,
+                                on=["カテゴリ"], how="inner")
+        df_month = df_month.loc[df_month["予算累計超過"] > 0]
+        df_month["当月予算超過"] = df_month["支出_x"] - df_month["予算"]
+        df_month_gr = df_month.groupby(
+            ["日付"], as_index=False).agg({"当月予算超過": "sum"})
+        df_month_gr = df_month_gr.sort_values("日付")
+        ret_str = []
+        ret_str.append("■月別予算超過額\n")
+        for index, row in df_month_gr.iterrows():
+
+            value = str(round(row["当月予算超過"] / 10000, 1)).rjust(4)
+            ret_str.append("{} {}\n".format(value, row["日付"]))
+
+        total_over = str(
+            round(df_month_gr["当月予算超過"].sum()*rate / 12 / 10000, 1)).rjust(4)
+        ret_str.append("{} {}\n".format(total_over, "累計"))
+
+        # 支出カテゴリ毎の予算超過額を出力
+        ret_str.append("\n■カテゴリ別予算超過額\n")
+        for index, row in wk_mst_df.iterrows():
+
+            budget = str(round(row["予算"] / 10000, 1)).rjust(4)
+            value = str(round(row["支出"] / 10000 / rate, 1)).rjust(4)
+            over_budget = str(round(row["予算累計超過"] / 10000 / rate, 1)).rjust(4)
+
+            ret_str.append("{} {} / {} {}\n".format(over_budget,
+                                                    value, budget, row["表示名"]))
+
+        # 支出毎に予算を算出
+
+        return "".join(ret_str)
+
     def end(self):
         self.df_tran_merge_balance.to_csv(self.TRAN_BALANCE_PATH,
                                           encoding="utf-8", index=False)
@@ -683,6 +751,7 @@ def main():
     linepush.pushMessage(zic.get_merge_category_total_ave())
     linepush.pushMessage(zic.get_current_last_category())
     linepush.pushMessage(zic.get_current_category())
+    linepush.pushMessage(zic.get_merge_category_vs_budget())
 
     # zic.create_old_tran_category_file()
 
