@@ -656,7 +656,7 @@ class ZaimInfoCreater(object):
             ret_str.append("{} {}\n".format(value, row["日付"]))
 
         total_over = str(
-            round(df_month_gr["当月予算超過"].sum()*rate / 12 / 10000, 1)).rjust(4)
+            round(df_month_gr["当月予算超過"].sum() / rate / 10000, 1)).rjust(4)
         ret_str.append("{} {}\n".format(total_over, "累計"))
 
         # 支出カテゴリ毎の予算超過額を出力
@@ -744,14 +744,14 @@ def main():
 
     zic = ZaimInfoCreater(last_start_date, last_end_date, today_date)
 
-    linepush.pushMessage(zic.get_merge_balance_group())
-    linepush.pushMessage(zic.get_merge_category_cate())
-    linepush.pushMessage(zic.get_current_balance())
-    linepush.pushMessage(zic.get_merge_category_total())
-    linepush.pushMessage(zic.get_merge_category_total_ave())
-    linepush.pushMessage(zic.get_current_last_category())
-    linepush.pushMessage(zic.get_current_category())
-    linepush.pushMessage(zic.get_merge_category_vs_budget())
+    # print(zic.get_merge_balance_group())
+    # print(zic.get_merge_category_cate())
+    # print(zic.get_current_balance())
+    # print(zic.get_merge_category_total())
+    # print(zic.get_merge_category_total_ave())
+    # print(zic.get_current_last_category())
+    # print(zic.get_current_category())
+    print(zic.get_merge_category_vs_budget())
 
     # zic.create_old_tran_category_file()
 
