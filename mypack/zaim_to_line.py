@@ -22,10 +22,10 @@ def main():
         last_month_start_date, last_month_end_date, today_date)
 
     linepush.pushMessage(zic.get_merge_balance_group())
-    linepush.pushMessage(zic.get_merge_category_cate())
+    # linepush.pushMessage(zic.get_merge_category_cate())
     linepush.pushMessage(zic.get_current_balance())
     linepush.pushMessage(zic.get_merge_category_total())
-    linepush.pushMessage(zic.get_merge_category_total_ave())
+    # linepush.pushMessage(zic.get_merge_category_total_ave())
     linepush.pushMessage(zic.get_current_last_category())
     linepush.pushMessage(zic.get_current_category())
     linepush.pushMessage(zic.get_merge_category_vs_budget())
