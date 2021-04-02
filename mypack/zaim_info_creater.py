@@ -337,7 +337,7 @@ class ZaimInfoCreater(object):
             df_tran, df_mst, on=[key], how="inner")
 
         # 詳細出力対象のみ出力
-        df_wk = df_wk.loc[df_wk["詳細出力フラグ"] == 1]
+        df_wk = df_wk.loc[df_wk["支出分類"] > 0]
 
         # 表示名で集計
         df_wk = df_wk.groupby([display_name], as_index=False).agg(
@@ -575,7 +575,7 @@ class ZaimInfoCreater(object):
                                     >= one_years_ago_str]
 
         # 詳細出力対象のみ出力
-        df_wk = wk_mst_df.loc[wk_mst_df["詳細出力フラグ"] == 1]
+        df_wk = wk_mst_df.loc[wk_mst_df["支出分類"] > 0]
 
         # # 出力
         ret_str = []
@@ -638,30 +638,56 @@ class ZaimInfoCreater(object):
         wk_mst_df = wk_mst_df.sort_values("予算累計超過", ascending=False)
 
         # 支出カテゴリ毎の予算超過額を出力
-        wk_mst_df = wk_mst_df.loc[wk_mst_df["詳細出力フラグ"] > 0]
+        wk_mst_df = wk_mst_df.loc[wk_mst_df["支出分類"] > 0]
 
         # 月別の超過額を算出
         df_month = pandas.merge(wk_tran_df, wk_mst_df,
                                 on=["カテゴリ"], how="inner")
-        df_month = df_month.loc[df_month["予算累計超過"] > 0]
         df_month["当月予算超過"] = df_month["支出_x"] - df_month["予算"]
+        df_month = df_month.loc[df_month["当月予算超過"] > 0]
         df_month_gr = df_month.groupby(
             ["日付"], as_index=False).agg({"当月予算超過": "sum"})
+
+        df_month_1 = df_month.loc[df_month["支出分類"] == 1]
+        df_month_2 = df_month.loc[df_month["支出分類"] == 2]
+
+        df_month_gr_1 = df_month_1.groupby(
+            ["日付"], as_index=False).agg({"当月予算超過": "sum"})
+        df_month_gr_2 = df_month_2.groupby(
+            ["日付"], as_index=False).agg({"当月予算超過": "sum"})
+
         df_month_gr = df_month_gr.sort_values("日付")
         ret_str = []
         ret_str.append("■月別予算超過額\n")
         for index, row in df_month_gr.iterrows():
 
+            # 支出分類毎の当月予算超過取得
+            value_1 = df_month_gr_1.loc[df_month_gr_1["日付"]
+                                        == row["日付"]]["当月予算超過"].sum()
+            value_2 = df_month_gr_2.loc[df_month_gr_2["日付"]
+                                        == row["日付"]]["当月予算超過"].sum()
+
             value = str(round(row["当月予算超過"] / 10000, 1)).rjust(4)
-            ret_str.append("{} {}\n".format(value, row["日付"]))
+            value_1 = str(round(value_1 / 10000, 1)).rjust(4)
+            value_2 = str(round(value_2 / 10000, 1)).rjust(4)
+            ret_str.append("{} {} {} {}\n".format(
+                value, value_1, value_2, row["日付"]))
 
         total_over = str(
             round(df_month_gr["当月予算超過"].sum() / rate / 10000, 1)).rjust(4)
-        ret_str.append("{} {}\n".format(total_over, "累計"))
+        total_over_1 = str(
+            round(df_month_gr_1["当月予算超過"].sum() / rate / 10000, 1)).rjust(4)
+        total_over_2 = str(
+            round(df_month_gr_2["当月予算超過"].sum() / rate / 10000, 1)).rjust(4)
+        ret_str.append("{} {} {} {}\n".format(
+            total_over, total_over_1, total_over_2, "累計"))
 
         # 支出カテゴリ毎の予算超過額を出力
         ret_str.append("\n■カテゴリ別予算超過額\n")
-        for index, row in wk_mst_df.iterrows():
+        wk_mst_df_1 = wk_mst_df.loc[wk_mst_df["支出分類"] == 1]
+        wk_mst_df_2 = wk_mst_df.loc[wk_mst_df["支出分類"] == 2]
+        ret_str.append("＜分類1＞\n")
+        for index, row in wk_mst_df_1.iterrows():
 
             budget = str(round(row["予算"] / 10000, 1)).rjust(4)
             value = str(round(row["支出"] / 10000 / rate, 1)).rjust(4)
@@ -670,7 +696,35 @@ class ZaimInfoCreater(object):
             ret_str.append("{} {} / {} {}\n".format(over_budget,
                                                     value, budget, row["表示名"]))
 
-        # 支出毎に予算を算出
+        ret_str.append("＜分類2＞\n")
+        for index, row in wk_mst_df_2.iterrows():
+
+            budget = str(round(row["予算"] / 10000, 1)).rjust(4)
+            value = str(round(row["支出"] / 10000 / rate, 1)).rjust(4)
+            over_budget = str(round(row["予算累計超過"] / 10000 / rate, 1)).rjust(4)
+
+            ret_str.append("{} {} / {} {}\n".format(over_budget,
+                                                    value, budget, row["表示名"]))
+
+        wk_mst_df_1 = wk_mst_df_1.loc[wk_mst_df_1["予算累計超過"] > 0]
+        wk_mst_df_2 = wk_mst_df_2.loc[wk_mst_df_2["予算累計超過"] > 0]
+
+        total_ruikei_over = wk_mst_df_1["予算累計超過"].sum(
+        ) + wk_mst_df_2["予算累計超過"].sum()
+        total_ruikei_over_1 = wk_mst_df_1["予算累計超過"].sum()
+        total_ruikei_over_2 = wk_mst_df_2["予算累計超過"].sum()
+
+        total_ruikei_over = str(
+            round(total_ruikei_over / rate / 10000, 1)).rjust(4)
+        total_ruikei_over_1 = str(
+            round(total_ruikei_over_1 / rate / 10000, 1)).rjust(4)
+        total_ruikei_over_2 = str(
+            round(total_ruikei_over_2 / rate / 10000, 1)).rjust(4)
+
+        ret_str.append("＜累計（全予算：{}）＞\n".format(
+            round(self.df_mst_category["予算"].sum() / 10000, 1)))
+        ret_str.append("{} {} {}\n".format(
+            total_ruikei_over, total_ruikei_over_1, total_ruikei_over_2))
 
         return "".join(ret_str)
 
