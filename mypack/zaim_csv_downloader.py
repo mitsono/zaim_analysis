@@ -86,7 +86,7 @@ class ZaimCsvDownloader(object):
                 continue
             title = c_img_t['data-title']
 
-            c_div_name = c_div.find('div', attrs={'class': 'plus value'})
+            c_div_name = c_div.find('div', attrs={'class': 'value plus'})
             if c_div_name is None:
                 continue
             value = c_div_name.text.replace("\n", "").replace(
